@@ -11800,7 +11800,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[1]:</div>
+<div class="prompt input_prompt">In&nbsp;[51]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span></span><span class="c1"># Import libraries</span>
@@ -11852,14 +11852,14 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[2]:</div>
+<div class="prompt input_prompt">In&nbsp;[52]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span></span><span class="c1"># TODO: Calculate number of students</span>
 <span class="n">n_students</span> <span class="o">=</span> <span class="n">student_data</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">size</span>
 
 <span class="c1"># TODO: Calculate number of features</span>
-<span class="n">n_features</span> <span class="o">=</span> <span class="n">student_data</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">size</span>
+<span class="n">n_features</span> <span class="o">=</span> <span class="n">student_data</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">size</span> <span class="o">-</span> <span class="mi">1</span>
 
 <span class="c1"># TODO: Calculate passing students</span>
 <span class="n">n_passed</span> <span class="o">=</span> <span class="n">student_data</span><span class="p">[</span><span class="n">student_data</span><span class="p">[</span><span class="s1">&#39;passed&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;yes&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">size</span>
@@ -11890,7 +11890,7 @@ div#notebook {
 <div class="output_area"><div class="prompt"></div>
 <div class="output_subarea output_stream output_stdout output_text">
 <pre>Total number of students: 395
-Number of features: 31
+Number of features: 30
 Number of students who passed: 265
 Number of students who failed: 130
 Graduation rate of the class: 67.09%
@@ -11916,7 +11916,7 @@ Graduation rate of the class: 67.09%
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[3]:</div>
+<div class="prompt input_prompt">In&nbsp;[53]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span></span><span class="c1"># Extract feature columns</span>
@@ -11984,7 +11984,7 @@ Feature values:
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[4]:</div>
+<div class="prompt input_prompt">In&nbsp;[54]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span></span><span class="k">def</span> <span class="nf">preprocess_features</span><span class="p">(</span><span class="n">X</span><span class="p">):</span>
@@ -12053,9 +12053,27 @@ Feature values:
 </div>
 </div>
 </div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p><b>Review</b><p>
+<i>Pro Tip: Data assessment:
+When dealing with the new data set it is good practice to assess its specific characteristics and implement the cross validation technique tailored on those very characteristics, in our case there are two main elements:</p>
+<p>Our dataset is small.
+Our dataset is slightly unbalanced. (There are more passing students than on passing students)
+We could take advantage of K-fold cross validation to exploit small data sets. Even though in this case it might not be necessary, should we have to deal with heavily unbalance datasets, we could address the unbalanced nature of our data set using Stratified K-Fold and Stratified Shuffle Split Cross validation, as stratification is preserving the preserving the percentage of samples for each class.
+<a href="http://scikit-learn.org/stable/modules/generated/sklearn.cross_validation.StratifiedShuffleSplit.html">http://scikit-learn.org/stable/modules/generated/sklearn.cross_validation.StratifiedShuffleSplit.html</a>
+<a href="http://scikit-learn.org/stable/modules/generated/sklearn.cross_validation.StratifiedKFold.html">http://scikit-learn.org/stable/modules/generated/sklearn.cross_validation.StratifiedKFold.html</a>
+As for the initial train test split you can obtain stratification by simply using stratify = y_all:</p>
+
+</div>
+</div>
+</div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[5]:</div>
+<div class="prompt input_prompt">In&nbsp;[55]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span></span><span class="c1"># TODO: Import any additional functionality you may need here</span>
@@ -12068,8 +12086,10 @@ Feature values:
 <span class="n">num_test</span> <span class="o">=</span> <span class="n">X_all</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">num_train</span>
 
 <span class="c1"># TODO: Shuffle and split the dataset into the number of training and testing points above</span>
-<span class="n">X_train</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">y_test</span> <span class="o">=</span> \
-    <span class="n">train_test_split</span><span class="p">(</span><span class="n">X_all</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">y_all</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="n">num_test</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">123</span><span class="p">)</span>
+<span class="n">X_train</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">y_test</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">X_all</span><span class="p">,</span> <span class="n">y_all</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="n">num_test</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">123</span><span class="p">)</span>
+
+<span class="c1"># Review</span>
+<span class="c1">#X_train, X_test, y_train, y_test = train_test_split(X_all, y_all, stratify = y_all, test_size=95, random_state=42)    </span>
 
 <span class="c1"># Show the results of the split</span>
 <span class="k">print</span> <span class="s2">&quot;Training set has {} samples.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">X_train</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
@@ -12173,7 +12193,7 @@ Reference: <a href="https://www.amazon.com/gp/product/1783555130/ref=s9_psimh_gw
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[14]:</div>
+<div class="prompt input_prompt">In&nbsp;[56]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span></span><span class="o">%</span><span class="k">matplotlib</span> inline
@@ -12817,7 +12837,7 @@ hGH+XSOAe19rYiHAs2wAyPlsAMiJDQA5sQEgJzYA5MQGgNwAYqkGcfZ2KykAAAAASUVORK5CYII=
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[15]:</div>
+<div class="prompt input_prompt">In&nbsp;[57]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span></span><span class="k">def</span> <span class="nf">train_classifier</span><span class="p">(</span><span class="n">clf</span><span class="p">,</span> <span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">):</span>
@@ -12890,7 +12910,7 @@ hGH+XSOAe19rYiHAs2wAyPlsAMiJDQA5sQEgJzYA5MQGgNwAYqkGcfZ2KykAAAAASUVORK5CYII=
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[16]:</div>
+<div class="prompt input_prompt">In&nbsp;[58]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span></span><span class="c1"># TODO: Import the three supervised learning models from sklearn</span>
@@ -12912,6 +12932,13 @@ hGH+XSOAe19rYiHAs2wAyPlsAMiJDQA5sQEgJzYA5MQGgNwAYqkGcfZ2KykAAAAASUVORK5CYII=
 
 <span class="n">X_train_300</span> <span class="o">=</span> <span class="n">X_train</span><span class="p">[:</span><span class="mi">300</span><span class="p">]</span>
 <span class="n">y_train_300</span> <span class="o">=</span> <span class="n">y_train</span><span class="p">[:</span><span class="mi">300</span><span class="p">]</span>
+
+<span class="c1"># Reviewer&#39;s suggestion</span>
+<span class="c1"># Optional: You could use a loop to go through the algorithms:</span>
+<span class="c1">#for clf in [clf_A, clf_B, clf_C]:</span>
+<span class="c1">#    print &quot;\n{}: \n&quot;.format(clf.__class__.__name__)</span>
+<span class="c1">#    for n in [100, 200, 300]:</span>
+<span class="c1">#        train_predict(clf, X_train[:n], y_train[:n], X_test, y_test)</span>
 
 <span class="c1"># TODO: Execute the &#39;train_predict&#39; function for each classifier and each training set size</span>
 <span class="n">train_predict</span><span class="p">(</span><span class="n">clf_A</span><span class="p">,</span> <span class="n">X_train_100</span><span class="p">,</span> <span class="n">y_train_100</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">y_test</span><span class="p">)</span>
@@ -12938,58 +12965,58 @@ hGH+XSOAe19rYiHAs2wAyPlsAMiJDQA5sQEgJzYA5MQGgNwAYqkGcfZ2KykAAAAASUVORK5CYII=
 <div class="output_area"><div class="prompt"></div>
 <div class="output_subarea output_stream output_stdout output_text">
 <pre>Training a LogisticRegression using a training set size of 100. . .
-Trained model in 0.0020 seconds
-Made predictions in 0.0001 seconds.
-F1 score for training set: 0.8310.
+Trained model in 0.0021 seconds
 Made predictions in 0.0002 seconds.
+F1 score for training set: 0.8310.
+Made predictions in 0.0003 seconds.
 F1 score for test set: 0.8201.
 Training a LogisticRegression using a training set size of 200. . .
-Trained model in 0.0026 seconds
-Made predictions in 0.0001 seconds.
+Trained model in 0.0029 seconds
+Made predictions in 0.0002 seconds.
 F1 score for training set: 0.8188.
-Made predictions in 0.0001 seconds.
+Made predictions in 0.0002 seconds.
 F1 score for test set: 0.8472.
 Training a LogisticRegression using a training set size of 300. . .
-Trained model in 0.0037 seconds
-Made predictions in 0.0001 seconds.
+Trained model in 0.0039 seconds
+Made predictions in 0.0003 seconds.
 F1 score for training set: 0.8326.
-Made predictions in 0.0001 seconds.
+Made predictions in 0.0002 seconds.
 F1 score for test set: 0.8630.
 Training a KNeighborsClassifier using a training set size of 100. . .
-Trained model in 0.0005 seconds
-Made predictions in 0.0011 seconds.
+Trained model in 0.0006 seconds
+Made predictions in 0.0013 seconds.
 F1 score for training set: 0.7808.
-Made predictions in 0.0010 seconds.
+Made predictions in 0.0011 seconds.
 F1 score for test set: 0.8414.
 Training a KNeighborsClassifier using a training set size of 200. . .
 Trained model in 0.0006 seconds
-Made predictions in 0.0029 seconds.
+Made predictions in 0.0025 seconds.
 F1 score for training set: 0.8132.
-Made predictions in 0.0026 seconds.
+Made predictions in 0.0015 seconds.
 F1 score for test set: 0.8514.
 Training a KNeighborsClassifier using a training set size of 300. . .
-Trained model in 0.0013 seconds
-Made predictions in 0.0080 seconds.
+Trained model in 0.0008 seconds
+Made predictions in 0.0053 seconds.
 F1 score for training set: 0.8592.
-Made predictions in 0.0022 seconds.
+Made predictions in 0.0019 seconds.
 F1 score for test set: 0.8591.
 Training a RandomForestClassifier using a training set size of 100. . .
-Trained model in 0.0247 seconds
-Made predictions in 0.0011 seconds.
+Trained model in 0.0244 seconds
+Made predictions in 0.0012 seconds.
 F1 score for training set: 0.9846.
 Made predictions in 0.0011 seconds.
 F1 score for test set: 0.8194.
 Training a RandomForestClassifier using a training set size of 200. . .
-Trained model in 0.0246 seconds
-Made predictions in 0.0012 seconds.
+Trained model in 0.0254 seconds
+Made predictions in 0.0013 seconds.
 F1 score for training set: 0.9921.
-Made predictions in 0.0010 seconds.
+Made predictions in 0.0011 seconds.
 F1 score for test set: 0.7820.
 Training a RandomForestClassifier using a training set size of 300. . .
-Trained model in 0.0266 seconds
-Made predictions in 0.0013 seconds.
+Trained model in 0.0262 seconds
+Made predictions in 0.0015 seconds.
 F1 score for training set: 0.9949.
-Made predictions in 0.0010 seconds.
+Made predictions in 0.0012 seconds.
 F1 score for test set: 0.8299.
 </pre>
 </div>
@@ -13149,7 +13176,11 @@ F1 score for test set: 0.8299.
 <ul>
 <li>Efficiency: LR's training and prediction time is approximately ten times better than the one of Random Forest. On the largest data set (300 samples), the prediction time is 20 times better than KNN's.</li> 
 <li>Test score: Although, all models perform similarly well, LR has a slight advantage with larger datasets. Moreover, its prediction performance is improved with more data and the trend shows a steady increase in accuracy. The prediction ability of other models fluctuates with varying sample sizes</li>
-</ul>
+<li>Scalability: With extremely large data sets LR may perform poorly because it requires complete data set to generate the model, and whose computational efficiency grows linearly with the amount of data. In such scenario, Stochastic Gradient Descent (SGDC) would perform better while still fitting Logistic Regression model. With SGDC, existing data can be processed in batches, and new data can be fitted as it arrives, thus minimizing computation time and using minimal memory resources</li>
+</ul><p><p><b>Review</b><p><i>
+Tip: Scalability, developing a proactive attitude<br>
+An interesting question you might address to further improve your answer, and show some business-oriented proactivity by anticipating the customer’s needs, regards the scalability of your chosen algorithm: What would happen if you had to classify thousands or hundreds of thousands of students? What would happen with training time and with prediction time? Would you still choose the same algorithm? (Please note that this is relevant as not every algorithm scales linearly, some might scale exponentially, which means that the computational costs might grow exponentially with size. This is not an issue as for now but it would be if we were considering a much bigger number of students) (<a href="https://github.com/jeff1evesque/machine-learning/wiki/Algorithm:-Big-O-Notation">Algorithm Big-O</a>)</p>
+
 </div>
 </div>
 </div>
@@ -13173,7 +13204,9 @@ F1 score for test set: 0.8299.
 During training stage, the model assigns weights to specific characteristics (aka features). The weight signifies how much a specific feature affects the positive outcome, or a likelihood of a student passing the final exam.
 Once the training stage is complete, the model will have created a rule set, represented by the weights, to make inferences about future students. At this point, existing data can be discarded, and the model can be deployed in an application.</p>
 <p><p>
-A person in charge that wants to know which students need support before they drop out of school, would run the application against current student records. The application queries the model and returns the prediction. Based on the prediction, the person then takes the necessary steps to help those students graduate.</p>
+At the heart of logistic function is odds ratio. The ratio, or weight, signifies the odds in favor of a particular event. The combination of odds/weights with features of a sample produces a value that is further transoformed into a probability of a positive outcome, i.e., likelihood of a student passing the exam. To convert that probability into a true statement, the function compares the value against a threshold, for example 0.5 (probability of 50%). If the value is greater than or equal to threshold, the function declares positive outcome, otherwise negative (the student will fail).</p>
+<p><p>
+A person in charge that wants to know which students need support before they drop out of school, would run the application against current student records. The application queries the model and returns the prediction (true - will pass, false - will not pass). Based on the prediction, the person then takes the necessary steps to help those students graduate.</p>
 
 </div>
 </div>
@@ -13204,7 +13237,7 @@ A person in charge that wants to know which students need support before they dr
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[17]:</div>
+<div class="prompt input_prompt">In&nbsp;[59]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span></span><span class="c1"># TODO: Import &#39;GridSearchCV&#39; and &#39;make_scorer&#39;</span>
@@ -13249,7 +13282,7 @@ A person in charge that wants to know which students need support before they dr
 <pre>Best estimator parameters: {&#39;penalty&#39;: &#39;l1&#39;, &#39;C&#39;: 0.1}
 Made predictions in 0.0002 seconds.
 Tuned model has a training F1 score of 0.8069.
-Made predictions in 0.0001 seconds.
+Made predictions in 0.0002 seconds.
 Tuned model has a testing F1 score of 0.8846.
 </pre>
 </div>
@@ -13275,9 +13308,61 @@ Tuned model has a testing F1 score of 0.8846.
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
 <p>The final training and testing scores are 0.8069 and 0.8846 respectively. The testing score has improved by 1%!</p>
+<p><p><b>Review</b><p>
+<i>Pro Tip:<br>
+We can use a stratified shuffle split data-split which preserves the percentage of samples for each class and combines it with cross validation. This could be extremely useful when the dataset is strongly imbalanced towards one of the two target labels.</p>
+<p><p>
+<a href="http://scikit-learn.org/stable/modules/generated/sklearn.cross_validation.StratifiedShuffleSplit.html">Stratified Shuffle Split</a><p>
+In this example a support vector classifier is used, any other classifier would do, please remind to change the parameters adapting them to the specific classifier you intend to deploy.</p>
 
 </div>
 </div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[60]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython2"><pre><span></span><span class="kn">from</span> <span class="nn">sklearn.grid_search</span> <span class="kn">import</span> <span class="n">GridSearchCV</span> 
+<span class="kn">from</span> <span class="nn">sklearn.svm</span> <span class="kn">import</span> <span class="n">SVC</span>
+<span class="kn">from</span> <span class="nn">sklearn.cross_validation</span> <span class="kn">import</span> <span class="n">StratifiedShuffleSplit</span>
+<span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">f1_score</span>
+<span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">make_scorer</span>
+
+<span class="n">f1_scorer</span> <span class="o">=</span> <span class="n">make_scorer</span><span class="p">(</span><span class="n">f1_score</span><span class="p">,</span> <span class="n">pos_label</span><span class="o">=</span><span class="s2">&quot;yes&quot;</span><span class="p">)</span>
+<span class="n">parameters</span> <span class="o">=</span> <span class="p">{</span> <span class="s1">&#39;C&#39;</span> <span class="p">:</span> <span class="p">[</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">1000</span> <span class="p">],</span> <span class="s1">&#39;gamma&#39;</span> <span class="p">:</span> <span class="p">[</span> <span class="mf">0.0001</span><span class="p">,</span> <span class="mf">0.001</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">100</span> <span class="p">]</span> <span class="p">}</span> <span class="c1"># Some SVC parameters</span>
+
+<span class="n">ssscv</span> <span class="o">=</span> <span class="n">StratifiedShuffleSplit</span><span class="p">(</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">n_iter</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span> <span class="c1"># 1. Let&#39;s build a stratified shuffle object</span>
+
+<span class="n">grid</span> <span class="o">=</span> <span class="n">GridSearchCV</span><span class="p">(</span> <span class="n">SVC</span><span class="p">(),</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">cv</span> <span class="o">=</span> <span class="n">ssscv</span> <span class="p">,</span> <span class="n">scoring</span><span class="o">=</span><span class="n">f1_scorer</span><span class="p">)</span> <span class="c1"># 2. Let&#39;s now we pass the object and the parameters to grid search</span>
+<span class="n">grid</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span> <span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span> <span class="p">)</span> <span class="c1"># 3. Let&#39;s fit it</span>
+
+<span class="n">best</span> <span class="o">=</span> <span class="n">grid</span><span class="o">.</span><span class="n">best_estimator_</span> <span class="c1"># 4. Let&#39;s reteieve the best estimator found</span>
+<span class="n">y_pred</span> <span class="o">=</span> <span class="n">best</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span> <span class="n">X_test</span> <span class="p">)</span> <span class="c1"># 5. Let&#39;s make predictions!</span>
+
+<span class="k">print</span> <span class="s2">&quot;F1 score: {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span> <span class="n">f1_score</span><span class="p">(</span> <span class="n">y_test</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">,</span> <span class="n">pos_label</span> <span class="o">=</span> <span class="s1">&#39;yes&#39;</span> <span class="p">))</span>
+<span class="k">print</span> <span class="s2">&quot;Best params: {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span> <span class="n">grid</span><span class="o">.</span><span class="n">best_params_</span> <span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt"></div>
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>F1 score: 0.844155844156
+Best params: {&#39;C&#39;: 10, &#39;gamma&#39;: 0.1}
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
 </div>
 <div class="cell border-box-sizing text_cell rendered">
 <div class="prompt input_prompt">
@@ -13304,9 +13389,23 @@ Tuned model has a testing F1 score of 0.8846.
 <li><a href="http://www.ncbi.nlm.nih.gov/pubmed/21827427">Protein-Protein Interaction</a></li>
 <li><a href="http://www.nature.com/modpathol/journal/v18/n4/full/3800322a.html">Modern Pathology</a></li>
 <li><a href="http://sebastianraschka.com/blog/2015/why-python.html">Heat Maps in R</a></li>
+<li><a href="http://www.kdnuggets.com/2016/04/deep-learning-vs-svm-random-forest.html">When Does Deep Learning Work Better Than SVMs or Random Forests?</a></li>
 </ul>
 </div>
 </div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython2"><pre><span></span> 
+</pre></div>
+
+</div>
+</div>
+</div>
+
 </div>
     </div>
   </div>
