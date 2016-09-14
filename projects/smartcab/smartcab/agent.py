@@ -6,6 +6,8 @@ from planner import RoutePlanner
 from simulator import Simulator
 from pprint import pprint 
 
+trials = 100
+
 class LearningAgent(Agent):
     """An agent that learns to drive in the smartcab world."""
 
@@ -27,7 +29,7 @@ class LearningAgent(Agent):
         self.gamma = .0
         self.epsilon = .0
         self.random_count = 0
-        self.steps_total = 0
+        self.steps_total = 1
         self.steps_trial = 0
         self.rewards = 0
 
@@ -36,7 +38,7 @@ class LearningAgent(Agent):
 
         # Prepare for a new trip; reset any variables here, if required
 
-        if self.steps_total == 0:
+        if self.steps_total == 1:
             print 'STATS,Steps,Total,Random,Epsilon,Alpha,Gamma,Rewards' 
         else:
             print 'STATS,{:2},{:4},{:2},{:.2f},{:.2f},{:.2f},{:3}'.format(
@@ -48,11 +50,15 @@ class LearningAgent(Agent):
         self.random_count = 0
         self.steps_trial = 0
         self.rewards = 0
+        self.epsilon = 2 / (2 + math.sqrt(self.steps_total))
+        self.alpha = 10 / (10 + math.sqrt(self.steps_total))
 
     def getAction(self, state):
         action = None
         max_v = None
-        max_v_default = .1
+        # Use optimistic e-gready strategy. For unseen actions, set Q value between
+        # 2-10 (this problem only)
+        max_v_default = 5
         
         if random.random() < self.epsilon:
             # Realistic e-gready.
@@ -94,6 +100,8 @@ class LearningAgent(Agent):
                 ('right', inputs['right']),
                 ('light', inputs['light']),
                 ('next_waypoint', self.next_waypoint))
+        # Update state in GUI
+        self.state = state
 
         # Select action according to your policy
         action, max_v = self.getAction(state)
@@ -129,10 +137,10 @@ def run():
 
     # Now simulate it.
     # Create simulator (uses pygame when display=True, if available).
-    sim = Simulator(e, update_delay=.05, display=False)
+    sim = Simulator(e, update_delay=.01, display=False)
     # NOTE: To speed up simulation, reduce update_delay and/or set display=False
 
-    sim.run(n_trials=100)  # run for a specified number of trials
+    sim.run(n_trials=trials)  # run for a specified number of trials
 
     # NOTE: To quit midway, press Esc or close pygame window, or hit Ctrl+C on the
     # command-line

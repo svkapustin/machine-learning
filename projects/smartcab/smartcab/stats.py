@@ -38,12 +38,9 @@ for i in range(len(cols)):
 
 cols = ['Epsilon', 'Alpha']
 for i in range(len(cols)):
-    med = d[cols[i]].describe()['50%']
-    lbl = cols[i] + ' (Median: ' + str(med) + ')'
-    ax[1,i].scatter(d['Total'], d[cols[i]])
-    ax[1,i].axhline(med, color='r', linewidth=2)
-    ax[1,i].set_ylabel(lbl)
-    ax[1,i].set_xlabel('Total Steps')
+    ax[1,i].scatter(d['Rewards'], d[cols[i]])
+    ax[1,i].set_xlabel('Rewards')
+    ax[1,i].set_ylabel(cols[i])
     ax[1,i].yaxis.grid()
     ax[1,i].xaxis.grid()
 
