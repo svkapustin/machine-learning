@@ -1,16 +1,18 @@
+import logging
 import numpy as np
 import heapq
-import logging
 import sys
 from collections import deque
 from core_lib import Defs
 from core_lib import Cell
 from core_lib import Grid
+from core_lib import LogFilter
 
 log = logging.getLogger(__name__)
+log.addFilter(LogFilter())
 
 def init_log():
-    fmt='[%(name)s.%(funcName)s:%(lineno)s] %(message)s'
+    fmt='%(asctime)s %(levelname)5s [%(name_lineno)12s] %(message)s'
     logging.basicConfig(filename='output.log', filemode='w', level=logging.DEBUG,
             format=fmt)
 
@@ -31,105 +33,12 @@ class Robot(object):
         self.steps = 0
         self.cell = Cell((self.dim-1, 0), None, None, None, [None, None, 0, None])
         self.cell.parent = self.cell
-        self.cell.set_cost(0, self.grid.distance_to_goal(self.cell))
+        self.cell.set_cost(0, self.grid.distance_to_goal(self.cell.loc))
         self.grid.cells[self.cell.loc] = self.cell
         self.start = self.cell
         self.centre = None
         self.start_centre_path = deque()
         self.centre_start_path = deque()
-
-    def build_path_on_deadend(self, cell, sensors):
-        '''
-        Called by robot. If it is determined that the cell is a deadend, set
-        deadend score on this cell to a maximum number of cells in this grid plus
-        one. Propagate the status with decreasing score to all parents that have
-        at least 2 walls closed (or less than 3 walls open).
-
-        >>> r = Robot(12)
-        >>> c1 = Cell(None, None,0,0,[1,5,1,0])
-        >>> c2 = Cell(None, c1,  0,0,[0,0,2,1])
-        >>> c3 = Cell(None, c2,  0,0,[2,1,0,0])
-        >>> c4 = Cell(None, c3,  0,0,[1,0,1,0])
-        >>> c5 = Cell(None, c4,  0,0,[0,1,2,0])
-        >>> c6 = Cell(None, c5,  0,0,[0,0,0,1])
-        >>> r.build_path_on_deadend(c6, [0,0,0])[0]
-        Cell(None, None, 0, 0, [0, 1, 2, 0], 0, 144)
-        >>> c6
-        Cell(None, None, 0, 0, [0, 0, 0, 1], 0, 145)
-        >>> c2
-        Cell(None, None, 0, 0, [0, 0, 2, 1], 0, 141)
-        >>> c1
-        Cell(None, None, 0, 0, [1, 5, 1, 0], 0, 0)
-        '''
-        path = deque()
-
-        if None not in cell.viable:
-            if sum(sensors) == 0:
-                cell.deadend = self.dim * self.dim + 1
-                deadend_score = cell.deadend
-
-                while cell.parent != None:
-                    path.append(cell.parent)
-
-                    if cell.parent.viable.count(0) >= 2:
-                        deadend_score -= 1
-                        cell.parent.deadend = deadend_score
-                        cell = cell.parent
-                    else:
-                        break
-        return path
-
-    def build_tree(self, start, end, tree, steps):
-        ''' Create a tree that represents a path from start to end cell.
-
-        >>> c34 = Cell((3,4), None, 0, 0, [1,3,5,0])
-        >>> c35 = Cell((3,5), None, 0, 0, [1,2,0,1])
-        >>> c36 = Cell((3,6), None, 0, 0, [0,1,1,2])
-        >>> c37 = Cell((3,7), None, 0, 0, [1,0,0,3])
-        >>> c24 = Cell((2,4), None, 0, 0, [0,0,6,0]); c24.deadend=12*12
-        >>> c25 = Cell((2,5), None, 0, 0, [0,3,1,0])
-        >>> c26 = Cell((2,6), None, 0, 0, [2,2,0,1])
-        >>> c27 = Cell((2,7), None, 0, 0, [0,1,1,2])
-        >>> c28 = Cell((2,8), None, 0, 0, [1,0,0,3])
-        >>> c16 = Cell((1,6), None, 0, 0, [1,0,1,3])
-        >>> c17 = Cell((1,7), None, 0, 0, [1,None,0,None]) # end cell; unexplored
-        >>> c18 = Cell((1,8), None, 0, 0, [0,2,1,1])
-        >>> c06 = Cell((0,6), None, 0, 0, [0,1,2,3])
-        >>> c07 = Cell((0,7), None, 0, 0, [0,2,1,4])
-        >>> r = Robot(12)
-        >>> r.grid.cells = { \
-                                          c06.loc:c06, c07.loc:c07,\
-                                          c16.loc:c16, c17.loc:c17, c18.loc:c18,\
-                c24.loc:c24, c25.loc:c25, c26.loc:c26, c27.loc:c27, c28.loc:c28,\
-                c34.loc:c34, c35.loc:c35, c36.loc:c36, c37.loc:c37 }
-        >>> tree = {c34.loc:(0,c34)}
-        >>> r.build_tree(c34, c17, tree, 1)
-        True
-        >>> p = r.grid.build_reverse_path_from_tree(c34, c17, tree)
-        >>> r.grid.coord(p)
-        [(3, 5), (3, 6), (3, 7), (2, 7), (2, 8), (1, 8), (1, 7)]
-        '''
-        success = False
-
-        if end.loc in tree and steps > tree[end.loc][0]:
-            return success
-
-        cells = self.grid.neighbours(start, True, False)
-        cells = sorted(cells, key=lambda c: self.grid.distance(start.loc, c.loc))
-
-        for cell in cells:
-            if cell.loc in tree and steps > tree[cell.loc][0]:
-                continue
-            if cell == end:
-                success = True
-                tree[cell.loc] = (steps, start)
-                break
-            if cell.is_path_defined() == False:
-                continue
-
-            tree[cell.loc] = (steps, start)
-            success |= self.build_tree(cell, end, tree, steps + 1)
-        return success
 
     def select_next(self, sensors):
         ''' Select next cell to move to during maze exploration. If the grid
@@ -164,32 +73,43 @@ class Robot(object):
         >>> p = r.select_next(s); r.grid.coord(p)
         [(4, 4), (5, 4), (6, 4), (7, 4), (8, 4)]
         '''
-        path = self.build_path_on_deadend(self.cell, sensors)
+        path = self.grid.build_path_on_deadend(self.cell, sensors)
 
         if len(path) > 0:
-            log.info('{}. Deadend path: {}'.format(
+            log.info('Deadend: {}. Escape path: {}'.format(
                 self.cell, self.grid.coord(path)))
             return path
 
         cells = self.grid.get_unvisited(self.cell)
-        log.debug('{}, unvisited cells: {}'.format(self.cell, cells))
-        tree = {self.cell.loc:(0, self.cell)}
+        tree = {self.cell.loc : (0, self.cell)}
         paths = deque()
 
         for end in cells:
-            end_cell = self.grid[end]
-            success = self.build_tree(self.cell, end_cell, tree, 1)
+            success = self.grid.build_tree(self.cell, end, tree, 1)
 
             if success:
-                path = self.grid.build_reverse_path_from_tree(
-                        self.cell, end_cell, tree)
+                def selector(cell): return tree[cell.loc][1]
+                path = self.grid.follow_parent(self.cell, end, selector)
                 paths.append(path)
 
         path = deque()
 
         if len(paths) > 0:
-            path = sorted(paths, key=lambda d: len(d))[0]
-            log.debug('{}, next path: {}'.format(self.cell, self.grid.coord(path)))
+            def selector(path):
+                weight = 1.5
+                end = path[len(path)-1]
+                h_cost = self.grid.distance_to_goal(end.loc)
+                cost = 0 if h_cost == 0 else len(path) + weight * h_cost
+
+                log.debug('From {} to {}, steps: {}, h-cost: {}, cost: {}, '\
+                        'path : {}'.format(self.cell.loc, end.loc, len(path),
+                            h_cost, cost, self.grid.coord(path)))
+                return cost
+
+            path = sorted(paths, key=selector)[0]
+
+            log.debug('Selected path from {}: {}'.format(self.cell.loc,
+                self.grid.coord(path)))
 
         return path
 
@@ -213,11 +133,9 @@ class Robot(object):
         the maze) then returing the tuple ('Reset', 'Reset') will indicate to
         the tester to end the run and return the robot to the start.
         '''
-        log.info('Visit curr: {}, heading: {}, sensors: {}'.format(
-            self.cell, Defs.HEADINGSS[self.heading], sensors))
         self.grid.on_visit(self.cell, self.heading, sensors)
 
-        if self.grid.distance_to_goal(self.cell) == 0:
+        if self.grid.distance_to_goal(self.cell.loc) == 0:
             if self.on_goal_reached():
                 return 'Reset','Reset'
 
@@ -233,9 +151,6 @@ class Robot(object):
                 sys.exit(-1)
 
         rotation, movement = self.move_instr(cell)
-
-        log.info('Visit next: {}, (Rotation,Movement,Heading): {}'.format(
-                self.cell, (rotation, movement, Defs.HEADINGSS[self.heading])))
 
         return rotation, movement
 
@@ -280,8 +195,32 @@ class Robot(object):
         self.heading = (self.heading + hoffset) % 4
         self.steps += abs(movement)
 
+        log.info('Next move (rotation, movement, heading): {}'.format(
+                (rotation, movement, Defs.HEADINGSS[self.heading])))
+
         return rotation, movement
         
+    def save_path(self, start_loc, end, path):
+        ''' Save the shortest path for the current phase.
+        '''
+        start = self.grid[start_loc]
+        path.extend(self.grid.follow_parent(start, self.cell))
+
+        log.info('Steps {}, goal: {}, path: \n{}'.format(
+            len(path), end, self.grid.coord(path)))
+
+    def reset(self, next_cell, goals):
+        ''' Reset robot and grid to perform next phase of navigation.
+        '''
+        self.grid.reset()
+        self.grid.set_goals(goals)
+        self.start = self.cell
+        self.start.parent = self.start
+        self.start.set_cost(0, self.grid.distance_to_goal(self.start.loc))
+        next_cell.parent = self.start
+        next_cell.set_cost(0, self.grid.distance_to_goal(next_cell.loc))
+        self.path = deque([next_cell])
+
     def on_goal_reached(self):
         ''' Since the robot reached its destination, change the robot's strategy.
         The strategy can be: (a) explore the maze further (b) reset to the starting
@@ -318,26 +257,6 @@ class Robot(object):
             return True
         elif self.mode == Defs.RUN_PHASE:
             return True
-
-    def save_path(self, start_loc, end, path):
-        ''' Save the shortest path for the current phase.
-        '''
-        start = self.grid[start_loc]
-        path.extend(self.grid.build_reverse_path(start, self.cell))
-        log.info('Steps {}, goal: {}, path: \n{}'.format(
-            len(path), end, self.grid.coord(path)))
-
-    def reset(self, next_cell, goals):
-        ''' Reset robot and grid to perform next phase of navigation.
-        '''
-        self.grid.reset()
-        self.grid.set_goals(goals)
-        self.start = self.cell
-        self.start.parent = self.start
-        self.start.set_cost(0, self.grid.distance_to_goal(self.start))
-        next_cell.parent = self.start
-        next_cell.set_cost(0, self.grid.distance_to_goal(next_cell))
-        self.path = deque([next_cell])
 
 if __name__ == '__main__':
     main()
