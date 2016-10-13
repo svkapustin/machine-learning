@@ -1,3 +1,19 @@
-# Project 5: Capstone
+# Project 5: Capstone. Plot and Navigate a Virtual Maze.
 
-The Capstone Project for the Machine Learning Engineer Nanodegree does not have any requirements for code, libraries, or datasets. You are free to choose your project as you wish! For students who are unable to construct a capstone project on their own imagination, a pre-built project has been provided in `robot_motion_planning`.
+<b>Requirements:</b><p>
+<ul>
+<li>Python 2.7.X</li>
+<li>Numpy</li>
+</ul>
+
+<b>Testing:</b><p>
+To run the tester, you can do so from the command line with a command like the following:<p>
+<i>python tester.py test_maze_01.txt</i>
+
+<b>Analysis:</b><p>
+To run the analysis:<p>
+<i>python analysis.py -m test_maze_01.txt -l output.log</i>
+<p>
+
+<b>Details:</b><p>
+For further details, see Capstone Project Report - Sergey Kapustin.pdf
