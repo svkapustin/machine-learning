@@ -2,6 +2,7 @@ import logging
 import numpy as np
 import heapq
 import sys
+import math
 from collections import deque
 from core_lib import Defs
 from core_lib import Cell
@@ -29,16 +30,20 @@ class Robot(object):
         self.heading = Defs.NORTH
         self.grid = Grid(self.dim)
         self.path = deque()
-        self.mode = Defs.START_CENTRE_PHASE
-        self.steps = 0
+        self.mode = Defs.START_CENTER_MODE
+
         self.cell = Cell((self.dim-1, 0), None, None, None, [None, None, 0, None])
         self.cell.parent = self.cell
         self.cell.set_cost(0, self.grid.distance_to_goal(self.cell.loc))
         self.grid.cells[self.cell.loc] = self.cell
+
         self.start = self.cell
-        self.centre = None
-        self.start_centre_path = deque()
-        self.centre_start_path = deque()
+        self.center = None
+        self.start_center_path = deque()
+        self.center_start_path = deque()
+        self.moves = 0
+        self.center_start_moves = 0
+        self.start_center_moves = 0
 
     def select_next(self, sensors):
         ''' Select next cell to move to during maze exploration. If the grid
@@ -85,7 +90,7 @@ class Robot(object):
         paths = deque()
 
         for end in cells:
-            success = self.grid.build_tree(self.cell, end, tree, 1)
+            success = self.grid.build_tree(self.cell, end, tree, 1, self.mode)
 
             if success:
                 def selector(cell): return tree[cell.loc][1]
@@ -133,7 +138,7 @@ class Robot(object):
         the maze) then returing the tuple ('Reset', 'Reset') will indicate to
         the tester to end the run and return the robot to the start.
         '''
-        self.grid.on_visit(self.cell, self.heading, sensors)
+        self.grid.on_visit(self.cell, self.heading, sensors, self.mode)
 
         if self.grid.distance_to_goal(self.cell.loc) == 0:
             if self.on_goal_reached():
@@ -151,6 +156,7 @@ class Robot(object):
                 sys.exit(-1)
 
         rotation, movement = self.move_instr(cell)
+        self.moves += 1
 
         return rotation, movement
 
@@ -171,8 +177,8 @@ class Robot(object):
             (7, 4) -> (8, 4): (1, 0) -> South -> ( 90, 1)
             (7, 4) -> (7, 3): (0,-1) -> West  -> (  0,-1)
 
-        >>> r= Robot(12); r.cell= Cell((7,4));
-        >>> r.heading= Defs.NORTH; r.move_instr(Cell((7,5)))
+        >>> r= Robot(12)
+        >>> r.heading= Defs.NORTH; r.cell= Cell((7,4)); r.move_instr(Cell((7,5)))
         (90, 1)
         >>> r.heading= Defs.SOUTH; r.cell= Cell((7,4)); r.move_instr(Cell((6,4)))
         (0, -1)
@@ -186,14 +192,22 @@ class Robot(object):
         (90, 1)
         >>> r.heading= Defs.EAST; r.cell= Cell((7,4)); r.move_instr(Cell((7,3)))
         (0, -1)
+        >>> r.heading= Defs.NORTH; r.cell= Cell((11,0)); r.move_instr(Cell((9,0)))
+        (0, 2)
+        >>> r.heading= Defs.SOUTH; r.cell= Cell((11,1)); r.move_instr(Cell((11,4)))
+        (-90, 3)
         '''
         (y1, x1), (y2, x2) = self.cell.loc, next_cell.loc
-        new_heading = Defs.HEADINGS[ (y2 - y1, x2 - x1) ]
+        yd, xd = (y2 - y1), (x2 - x1)
+        ys = int(math.copysign(1, yd)) if yd != 0 else 0
+        xs = int(math.copysign(1, xd)) if xd != 0 else 0
+
+        new_heading = Defs.HEADINGS[(ys, xs)]
         rotation, movement, hoffset = Defs.MOVES[(new_heading - self.heading) % 4]
+        movement = abs(yd + xd) * movement
 
         self.cell = next_cell
         self.heading = (self.heading + hoffset) % 4
-        self.steps += abs(movement)
 
         log.info('Next move (rotation, movement, heading): {}'.format(
                 (rotation, movement, Defs.HEADINGSS[self.heading])))
@@ -205,9 +219,6 @@ class Robot(object):
         '''
         start = self.grid[start_loc]
         path.extend(self.grid.follow_parent(start, self.cell))
-
-        log.info('Steps {}, goal: {}, path: \n{}'.format(
-            len(path), end, self.grid.coord(path)))
 
     def reset(self, next_cell, goals):
         ''' Reset robot and grid to perform next phase of navigation.
@@ -226,37 +237,134 @@ class Robot(object):
         The strategy can be: (a) explore the maze further (b) reset to the starting
         point to run along the determined root with as fewer steps as possible.
         '''
-        log.info('Reached goal: {}. Mode: {}, steps: {}'.format(
-                self.cell, self.mode, self.steps))
+        result = False
+        path = deque()
 
-        if self.mode == Defs.START_CENTRE_PHASE:
-            self.save_path(self.start.loc, self.cell, self.start_centre_path)
-            self.centre = self.cell
+        if self.mode == Defs.START_CENTER_MODE:
+            self.save_path(self.start.loc, self.cell, self.start_center_path)
+            self.start_center_moves = self.moves
+            self.center = self.cell
+
             next_cell = self.cell.parent
             self.reset(next_cell, [self.start.loc])
             self.start.visits = 1
             self.path = deque([next_cell])
-            self.mode = Defs.CENTRE_START_PHASE
-            return False
-        elif self.mode == Defs.CENTRE_START_PHASE:
-            self.save_path(self.start.loc, self.cell, self.centre_start_path)
+            self.mode = Defs.CENTER_START_MODE
+            self.moves = 0
+        elif self.mode == Defs.CENTER_START_MODE:
+            self.save_path(self.start.loc, self.cell, self.center_start_path)
+            self.center_start_path.pop()
+            self.center_start_path.reverse()
+            self.center_start_path.append(self.center)
+            self.center_start_moves = self.moves
+
             next_cell = self.cell.parent
             self.reset(next_cell, None)
             self.start.visits = 0
             self.heading = Defs.NORTH
-            self.mode = Defs.RUN_PHASE
-            self.steps = 0
+            self.mode = Defs.RUN_MODE
+            self.moves = 0
+            self.optimize_path()
+            result = True
+        elif self.mode == Defs.RUN_MODE:
+            result = True
+        return result
 
-            if len(self.start_centre_path) > len(self.centre_start_path):
-                self.path = self.centre_start_path
-                self.path.pop()
-                self.path.reverse()
-                self.path.append(self.centre)
-            else:
-                self.path = self.start_centre_path
-            return True
-        elif self.mode == Defs.RUN_PHASE:
-            return True
+    def optimize_path(self):
+        scp = self.grid.coord(self.start_center_path)
+        csp = self.grid.coord(self.center_start_path)
+        shp = self.select_short_legs(scp, csp) 
+        opp = self.merge_steps(shp)
+
+        self.path.clear()
+        for loc in opp:
+            self.path.append(self.grid[loc])
+
+        log.info('Goals reached. '\
+                'OpM: {}, OpL: {}, OpP: {}, '\
+                'ShM: {}, ShL: {}, ShP: {}, '\
+                'ScM: {}, ScL: {}, ScP: {}, '\
+                'CsM: {}, CsL: {}, CsP: {}'.format(
+            len(opp), len(opp), opp,
+            len(shp), len(shp), shp,
+            self.start_center_moves, len(scp), scp,
+            self.center_start_moves, len(csp), csp))
+
+    def select_short_legs(self, a, b):
+        ''' When paths intersect at a cell, one leg leading to that cell can
+        be more efficient. Here select the most efficient leg.
+
+        >>> r = Robot(12)
+        >>> a = [(10, 0), (9, 0), (8, 0), (7, 0), (6, 0), (5, 0), (5, 1), (5, 2), \
+                (6, 2), (6, 3), (7, 3), (7, 4), (7, 5), (7, 6), (8, 6), (8, 5),\
+                (9, 5), (9, 6), (10, 6), (10, 7), (11, 7), (11, 8), (11, 9),\
+                (11, 10), (11, 11), (10, 11), (9, 11), (8, 11), (7, 11), (6, 11),\
+                (5, 11), (4, 11), (4, 10), (5, 10), (6, 10), (6, 9), (5, 9),\
+                (5, 8), (6, 8), (6, 7), (5, 7), (5, 6)]
+        >>> b = [(10, 0), (9, 0), (9, 1), (10, 1), (11, 1), (11, 2), (11, 3),\
+                (11, 4), (10, 4), (9, 4), (9, 5), (10, 5), (11, 5), (11, 6),\
+                (10, 6), (10, 7), (11, 7), (11, 8), (11, 9), (11, 10), (11, 11),\
+                (10, 11), (9, 11), (8, 11), (8, 10), (8, 9), (8, 8), (7, 8),\
+                (6, 8), (6, 7), (5, 7), (5, 6)]
+        >>> r.select_short_legs(a,b)
+        [(10, 0), (9, 0), (9, 1), (10, 1), (11, 1), (11, 2), (11, 3), (11, 4), (10, 4), (9, 4), (9, 5), (9, 6), (10, 6), (10, 7), (11, 7), (11, 8), (11, 9), (11, 10), (11, 11), (10, 11), (9, 11), (8, 11), (8, 10), (8, 9), (8, 8), (7, 8), (6, 8), (6, 7), (5, 7), (5, 6)]
+        '''
+        max_path, min_path = (a,b) if len(a) > len(b) else (b,a)
+        max_start, min_start = 0, 0
+        locs = []
+
+        for max_end in range(len(max_path)):
+            loc = max_path[max_end]
+
+            if loc in min_path:
+                min_end = min_path.index(loc)
+                max_delta, min_delta = max_end - max_start, min_end - min_start
+
+                if max_delta >= min_delta:
+                    locs.extend(min_path[min_start:min_end]) 
+                else:
+                    locs.extend(max_path[max_start:max_end]) 
+
+                max_start, min_start = max_end, min_end
+
+        locs.append(min_path[len(min_path)-1])
+        return locs
+
+    def merge_steps(self, locations):
+        ''' Merge the steps of single-step path so as to travel up to 3 steps
+        at a time.
+
+        >>> r = Robot(12)
+        >>> locs = [(10, 0), (9, 0), (9, 1), (10, 1), (11, 1), (11, 2),\
+                (11, 3), (11, 4), (10, 4), (9, 4), (9, 5), (9, 6), (10, 6),\
+                (10, 7), (11, 7), (11, 8), (11, 9), (11, 10), (11, 11), (10, 11),\
+                (9, 11), (8, 11), (8, 10), (8, 9), (8, 8), (7, 8), (6, 8), (6, 7),\
+                (5, 7), (5,6)]
+        >>> r.merge_steps(locs)
+        [(9, 0), (9, 1), (11, 1), (11, 4), (9, 4), (9, 6), (10, 6), (10, 7), (11, 7), (11, 10), (11, 11), (8, 11), (8, 8), (6, 8), (6, 7), (5, 7), (5, 6)]
+        '''
+
+        new_path = []
+        start = (self.dim-1, 0)
+        priv_loc = start
+        priv_heading = Defs.NORTH
+        steps = 0
+
+        for i,loc in enumerate(locations):
+            steps += 1 
+            heading = Defs.HEADINGS[(loc[0] - priv_loc[0], loc[1] - priv_loc[1])]
+
+            if priv_heading != heading or steps == 3:
+                new_path.append(priv_loc)
+                priv_heading = heading
+                start = priv_loc
+                steps = 0
+            priv_loc = locations[i]
+
+        new_path.append(locations[len(locations)-1])
+        return new_path
 
 if __name__ == '__main__':
-    main()
+    import doctest
+    r = Robot(12)
+    doctest.run_docstring_examples(r.move_instr, globals())

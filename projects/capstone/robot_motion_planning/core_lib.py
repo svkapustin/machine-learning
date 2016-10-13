@@ -16,9 +16,9 @@ log.addFilter(LogFilter())
 class Defs:
     NORTH, EAST, SOUTH, WEST        = 0, 1, 2, 3
     LEFT, CENTER, RIGHT             = 0, 1, 2 
-    START_CENTRE_PHASE                = 0
-    CENTRE_START_PHASE                = 1
-    RUN_PHASE                       = 2
+    START_CENTER_MODE               = 0
+    CENTER_START_MODE               = 1
+    RUN_MODE                        = 2
     HEADINGS = {(-1,0):NORTH, (0,1):EAST, (1,0):SOUTH, (0,-1):WEST}
     MOVES = [ (0,1,0), (90,1,1), (0,-1,0), (-90,1,-1) ]
     HEADINGSS = ['N','E','S','W']
@@ -95,7 +95,7 @@ class Grid:
         return [cell.loc for cell in cells]
 
     def set_goals(self, goals=None):
-        ''' Set goal to the maze centre or to the parameter goals. The goal format is
+        ''' Set goal to the maze center or to the parameter goals. The goal format is
         cell location tuple, (y,x).
         '''
         if goals == None:
@@ -121,7 +121,7 @@ class Grid:
         return abs(x1 - x2) + abs(y1 - y2)
 
     def distance_to_goal(self, source_loc):
-        ''' Calculate the distance from source to goal. Since the centre goal may
+        ''' Calculate the distance from source to goal. Since the center goal may
         occupy 4 locations, provide the minimum distance. '''
         distances = []
         for goal_loc in self.goals:
@@ -152,14 +152,14 @@ class Grid:
                 heuristic = self.distance_to_goal(cell_to.loc)
                 cell_to.set_cost(new_g_cost, new_g_cost + heuristic)
 
-    def on_visit(self, cell, heading, sensors):
+    def on_visit(self, cell, heading, sensors, mode):
         ''' Called by robot when it visits a cell. Here the cell's viable paths
         are updated. Also, cell's neighbours are created and added to
         unvisited-cell map if the neighbour is never visited before.
 
         >>> cell = Cell((11,0), None, 0, 10); cell.viable = [11,0,0,0]
         >>> g, sensors, heading = Grid(12), [0, 11, 0], Defs.NORTH
-        >>> g.on_visit(cell, heading, sensors)
+        >>> g.on_visit(cell, heading, sensors, 0)
         >>> cell.viable[Defs.WEST] == 0
         True
         >>> cell.viable[Defs.NORTH] == 11
@@ -168,7 +168,7 @@ class Grid:
         True
         >>> cell = Cell((9,0), None, 2, 8, [9,3,2,0]); g[(9,0)] = cell
         >>> sensors, heading = [9, 3, 2], Defs.EAST
-        >>> g.on_visit(cell, heading, sensors)
+        >>> g.on_visit(cell, heading, sensors, 0)
         >>> cell.viable[Defs.NORTH] == 9
         True
         >>> cell.viable[Defs.EAST] == 3
@@ -177,7 +177,6 @@ class Grid:
         True
         '''
         cell.visits += 1
-        self.unvisited.pop(cell.loc, None)
         offset = (heading - 1)
 
         for direction in range(len(sensors)):
@@ -185,28 +184,29 @@ class Grid:
             cell.viable[polar_heading] = sensors[direction]
             offset += 1
 
-        log.info('Visiting: {}, heading: {}, sensors: {}'.format(
-            cell, Defs.HEADINGSS[heading], sensors))
+        log.info('Visiting: {}, heading: {}, sensors: {}, mode: {}'.format(
+            cell, Defs.HEADINGSS[heading], sensors, mode))
 
-        # Add/update neighbours.
-        neighbours = self.neighbours(cell, False, True)
+        if mode != Defs.RUN_MODE:
+            self.unvisited.pop(cell.loc, None)
+            neighbours = self.neighbours(cell, False, True, mode)
 
-        for neighbour in neighbours:
-            self.unvisited[neighbour.loc] = neighbour
-            log.debug('Unvisited: {}'.format(neighbour))
+            for neighbour in neighbours:
+                self.unvisited[neighbour.loc] = neighbour
+                log.debug('Unvisited: {}'.format(neighbour))
 
-    def neighbours(self, cell, add_visited, set_cost):
+    def neighbours(self, cell, add_visited, set_cost, mode):
         ''' Create a list of nodes relative to the current node's position. Depending
         on add_visisted and set_cost parameters, filter out neighbours already
         visisted and update their cost.
 
         >>> g = Grid(12)
         >>> cell = Cell((11,0), None, 0, 10, [11,0,0,0])
-        >>> cells = g.neighbours(cell, False, True)
+        >>> cells = g.neighbours(cell, False, True, 0)
         >>> cells[0].loc == (10, 0)
         True
         >>> cell = Cell((9,0), None, 2, 8, [9,3,2,0])
-        >>> cells = g.neighbours(cell, False, True)
+        >>> cells = g.neighbours(cell, False, True, 0)
         >>> cells[0].loc == (8, 0)
         True
         >>> cells[1].loc == (9, 1)
@@ -221,7 +221,7 @@ class Grid:
         for polar_heading in range(len(cell.viable)):
             if cell.viable[polar_heading] > 0:
                 loc = locs[polar_heading]
-                neighbour = self.get_cell(cell, polar_heading, loc)
+                neighbour = self.get_cell(cell, polar_heading, loc, mode)
 
                 if neighbour.deadend == 0:
                     if neighbour.visits == 0:
@@ -234,13 +234,13 @@ class Grid:
 
         return cells
 
-    def get_cell(self, cell, polar_heading, loc):
+    def get_cell(self, cell, polar_heading, loc, mode):
         ''' Provide an existing cell or create a new one.
 
         >>> g = Grid(12); curr = Cell((9,0), None, 0, 0, [9,3,2,0])
-        >>> g.get_cell(curr, Defs.NORTH, (8,0))
+        >>> g.get_cell(curr, Defs.NORTH, (8,0), 0)
         Cell((8, 0), (9, 0), None, None, [8, None, 3, None], 0, 0)
-        >>> g.get_cell(curr, Defs.EAST, (9,1))
+        >>> g.get_cell(curr, Defs.EAST, (9,1), 0)
         Cell((9, 1), (9, 0), None, None, [None, 2, None, 1], 0, 0)
         >>> #for c in g.cells.values(): print(c) 
         '''
@@ -249,6 +249,7 @@ class Grid:
         if neighbour == None:
             neighbour = Cell(loc, cell)
             self.cells[loc] = neighbour
+            log.debug('New cell: {}, mode: {}'.format(neighbour, mode))
         else:
             if not neighbour.parent:
                 neighbour.parent = cell
@@ -262,7 +263,7 @@ class Grid:
 
         return neighbour
 
-    def build_tree(self, start, end, tree, steps):
+    def build_tree(self, start, end, tree, steps, mode):
         ''' Create a tree that represents a path from start to end cell.
 
         >>> c34 = Cell((3,4), None, 0, 0, [1,3,5,0])
@@ -286,7 +287,7 @@ class Grid:
                 c24.loc:c24, c25.loc:c25, c26.loc:c26, c27.loc:c27, c28.loc:c28,\
                 c34.loc:c34, c35.loc:c35, c36.loc:c36, c37.loc:c37 }
         >>> tree = {c34.loc:(0,c34)}
-        >>> g.build_tree(c34, c17, tree, 1)
+        >>> g.build_tree(c34, c17, tree, 1, 0)
         True
         >>> def selector(cell): return tree[cell.loc][1]
         >>> p = g.follow_parent(c34, c17, selector)
@@ -298,7 +299,7 @@ class Grid:
         if end.loc in tree and steps > tree[end.loc][0]:
             return success
 
-        cells = self.neighbours(start, True, False)
+        cells = self.neighbours(start, True, False, mode)
 
         for cell in cells:
             if cell.loc in tree and steps > tree[cell.loc][0]:
@@ -312,7 +313,7 @@ class Grid:
 
             tree[cell.loc] = (steps, start)
 
-            success |= self.build_tree(cell, end, tree, steps + 1)
+            success |= self.build_tree(cell, end, tree, steps + 1, mode)
         return success
 
     def follow_parent(self, start, end, parent_selector=None):
